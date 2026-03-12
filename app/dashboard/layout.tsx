@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/src/contexts/AuthContext';
 import {
   HomeIcon,
   DocumentTextIcon,
@@ -15,7 +16,9 @@ import Navigation from '@/src/components/Navigation';
 
 const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { user, logout } = useAuth();
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: <HomeIcon className="h-5 w-5" /> },
@@ -92,12 +95,43 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
               
               <div className="flex items-center">
                 <div className="ml-3 relative">
-                  <div className="flex items-center space-x-4">
-                    <span className="text-sm font-medium text-gray-700">Admin User</span>
-                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 font-medium">
-                      AU
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center space-x-3 focus:outline-none"
+                  >
+                    <div className="text-right hidden md:block">
+                      <p className="text-sm font-medium text-gray-700">{user?.name || 'User'}</p>
+                      <p className="text-xs text-gray-500">{user?.email || ''}</p>
                     </div>
-                  </div>
+                    <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-800 font-medium cursor-pointer">
+                      {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                  </button>
+
+                  {/* Dropdown Menu */}
+                  {userMenuOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-10" 
+                        onClick={() => setUserMenuOpen(false)}
+                      />
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-20 ring-1 ring-black ring-opacity-5">
+                        <div className="px-4 py-2 border-b border-gray-200">
+                          <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+                          <p className="text-xs text-gray-500 truncate">{user?.email || ''}</p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            logout();
+                            setUserMenuOpen(false);
+                          }}
+                          className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                        >
+                          Sign out
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             </div>

@@ -2,10 +2,12 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/src/contexts/AuthContext';
 import { EyeIcon, EyeSlashIcon, LockClosedIcon, EnvelopeIcon } from '@heroicons/react/24/solid';
 
 const LoginPage = () => {
   const router = useRouter();
+  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -48,8 +50,8 @@ const LoginPage = () => {
     
     setLoading(false);
     
-    // Redirect to dashboard after successful login
-    router.push('/dashboard');
+    // Use auth context to login and redirect
+    login(formData.email);
   };
 
   return (
