@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation';
 interface AuthContextType {
   isAuthenticated: boolean;
   user: { name: string; email: string } | null;
-  login: (email: string) => void;
+  login: (email: string, password: string) => boolean;
+  register: (name: string, email: string, password: string) => boolean;
   logout: () => void;
 }
 
@@ -26,16 +27,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const login = (email: string) => {
-    // Simulate login - in real app, this would validate credentials
-    const userData = {
-      name: email.split('@')[0],
-      email: email
+  const login = (email: string, password: string) => {
+    // Get stored users from localStorage
+    const storedUsers = localStorage.getItem('billingAppUsers');
+    const users = storedUsers ? JSON.parse(storedUsers) : [];
+    
+    // Find user with matching email and password
+    const user = users.find((u: any) => u.email === email && u.password === password);
+    
+    if (user) {
+      const userData = {
+        name: user.name,
+        email: user.email
+      };
+      localStorage.setItem('billingAppUser', JSON.stringify(userData));
+      setUser(userData);
+      setIsAuthenticated(true);
+      router.push('/dashboard');
+      return true;
+    } else {
+      return false;
+    }
+  };
+
+  const register = (name: string, email: string, password: string) => {
+    // Get stored users from localStorage
+    const storedUsers = localStorage.getItem('billingAppUsers');
+    const users = storedUsers ? JSON.parse(storedUsers) : [];
+    
+    // Check if email already exists
+    const existingUser = users.find((u: any) => u.email === email);
+    
+    if (existingUser) {
+      return false; // Email already exists
+    }
+    
+    // Add new user
+    const newUser = {
+      id: Date.now().toString(),
+      name: name,
+      email: email,
+      password: password, // In production, this should be hashed
+      createdAt: new Date().toISOString()
     };
-    localStorage.setItem('billingAppUser', JSON.stringify(userData));
-    setUser(userData);
-    setIsAuthenticated(true);
-    router.push('/dashboard');
+    
+    users.push(newUser);
+    localStorage.setItem('billingAppUsers', JSON.stringify(users));
+    
+    return true;
   };
 
   const logout = () => {
@@ -46,7 +85,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );

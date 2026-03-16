@@ -7,8 +7,8 @@ export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to login page on component mount
-    router.push('/login');
+    // Redirect to signup page on component mount
+    router.push('/signup');
   }, [router]);
 
   return (
