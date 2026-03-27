@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Card from '@/src/components/Card';
 import Button from '@/src/components/Button';
+import Input from '@/src/components/Input';
 import Table from '@/src/components/Table';
 import { 
   PlusIcon, 
@@ -10,6 +11,7 @@ import {
   PencilIcon,
   TrashIcon,
   EyeIcon,
+  XMarkIcon,
   CurrencyDollarIcon,
   DocumentTextIcon,
   CheckCircleIcon,
@@ -23,6 +25,14 @@ interface Invoice {
   customerEmail: string;
   amount: number;
   date: string;
+  dueDate: string;
+  status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
+}
+
+interface InvoiceFormData {
+  customer: string;
+  customerEmail: string;
+  amount: string;
   dueDate: string;
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
 }
@@ -82,6 +92,15 @@ const InvoicesPage = () => {
   ]);
 
   const [searchTerm, setSearchTerm] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [formData, setFormData] = useState<InvoiceFormData>({
+    customer: '',
+    customerEmail: '',
+    amount: '',
+    dueDate: '',
+    status: 'draft'
+  });
+  const [formErrors, setFormErrors] = useState<{customer?: string; customerEmail?: string; amount?: string; dueDate?: string}>({});
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -110,6 +129,74 @@ const InvoicesPage = () => {
     invoice.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
     invoice.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const validateForm = () => {
+    const newErrors: {customer?: string; customerEmail?: string; amount?: string; dueDate?: string} = {};
+    
+    if (!formData.customer.trim()) {
+      newErrors.customer = 'Customer name is required';
+    }
+    
+    if (!formData.customerEmail) {
+      newErrors.customerEmail = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.customerEmail)) {
+      newErrors.customerEmail = 'Please enter a valid email';
+    }
+    
+    if (!formData.amount) {
+      newErrors.amount = 'Amount is required';
+    } else if (isNaN(Number(formData.amount)) || Number(formData.amount) <= 0) {
+      newErrors.amount = 'Please enter a valid amount greater than 0';
+    }
+    
+    if (!formData.dueDate) {
+      newErrors.dueDate = 'Due date is required';
+    }
+    
+    setFormErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    const today = new Date().toISOString().split('T')[0];
+    const nextInvoiceNumber = `INV-${String(invoices.length + 1).padStart(3, '0')}`;
+    
+    const newInvoice: Invoice = {
+      id: Date.now().toString(),
+      invoiceNumber: nextInvoiceNumber,
+      customer: formData.customer,
+      customerEmail: formData.customerEmail,
+      amount: Number(formData.amount),
+      date: today,
+      dueDate: formData.dueDate,
+      status: formData.status
+    };
+    
+    setInvoices([...invoices, newInvoice]);
+    setIsModalOpen(false);
+    setFormData({
+      customer: '',
+      customerEmail: '',
+      amount: '',
+      dueDate: '',
+      status: 'draft'
+    });
+    setFormErrors({});
+  };
+
+  const handleInputChange = (field: keyof InvoiceFormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error for this field when user starts typing
+    if (formErrors[field as keyof typeof formErrors]) {
+      setFormErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
 
   const columns = [
     {
@@ -194,7 +281,11 @@ const InvoicesPage = () => {
             </p>
           </div>
           <div className="mt-4 sm:mt-0">
-            <Button variant="primary" icon={<PlusIcon className="h-4 w-4" />}>
+            <Button 
+              variant="primary" 
+              icon={<PlusIcon className="h-4 w-4" />}
+              onClick={() => setIsModalOpen(true)}
+            >
               Create Invoice
             </Button>
           </div>
@@ -288,6 +379,153 @@ const InvoicesPage = () => {
           onRowClick={(record) => console.log('View invoice:', record)}
         />
       </Card>
+
+      {/* Create Invoice Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-[9999] overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            {/* Background overlay */}
+            <div 
+              className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+              onClick={() => setIsModalOpen(false)}
+            />
+
+            {/* Modal panel */}
+            <div className="inline-block w-full max-w-md my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg relative z-[10000]">
+              <div className="flex justify-between items-center mb-6 px-6 pt-6">
+                <h3 className="text-xl font-bold text-gray-900">Create New Invoice</h3>
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-500 focus:outline-none"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4 px-6 pb-6">
+                {/* Customer Name */}
+                <div>
+                  <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="customer"
+                    value={formData.customer}
+                    onChange={(e) => handleInputChange('customer', e.target.value)}
+                    className={`block w-full px-3 py-2 border ${
+                      formErrors.customer ? 'border-red-500' : 'border-gray-300'
+                    } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    placeholder="John Doe"
+                  />
+                  {formErrors.customer && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.customer}</p>
+                  )}
+                </div>
+
+                {/* Customer Email */}
+                <div>
+                  <label htmlFor="customerEmail" className="block text-sm font-medium text-gray-700 mb-1">
+                    Customer Email *
+                  </label>
+                  <input
+                    type="email"
+                    id="customerEmail"
+                    value={formData.customerEmail}
+                    onChange={(e) => handleInputChange('customerEmail', e.target.value)}
+                    className={`block w-full px-3 py-2 border ${
+                      formErrors.customerEmail ? 'border-red-500' : 'border-gray-300'
+                    } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    placeholder="john@example.com"
+                  />
+                  {formErrors.customerEmail && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.customerEmail}</p>
+                  )}
+                </div>
+
+                {/* Amount */}
+                <div>
+                  <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+                    Amount ($)*
+                  </label>
+                  <input
+                    type="number"
+                    id="amount"
+                    step="0.01"
+                    min="0.01"
+                    value={formData.amount}
+                    onChange={(e) => handleInputChange('amount', e.target.value)}
+                    className={`block w-full px-3 py-2 border ${
+                      formErrors.amount ? 'border-red-500' : 'border-gray-300'
+                    } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                    placeholder="0.00"
+                  />
+                  {formErrors.amount && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.amount}</p>
+                  )}
+                </div>
+
+                {/* Due Date */}
+                <div>
+                  <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 mb-1">
+                    Due Date *
+                  </label>
+                  <input
+                    type="date"
+                    id="dueDate"
+                    value={formData.dueDate}
+                    onChange={(e) => handleInputChange('dueDate', e.target.value)}
+                    className={`block w-full px-3 py-2 border ${
+                      formErrors.dueDate ? 'border-red-500' : 'border-gray-300'
+                    } rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm`}
+                  />
+                  {formErrors.dueDate && (
+                    <p className="mt-1 text-sm text-red-600">{formErrors.dueDate}</p>
+                  )}
+                </div>
+
+                {/* Status */}
+                <div>
+                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    id="status"
+                    value={formData.status}
+                    onChange={(e) => handleInputChange('status', e.target.value as any)}
+                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="sent">Sent</option>
+                    <option value="paid">Paid</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    className="flex-1"
+                  >
+                    Create Invoice
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
