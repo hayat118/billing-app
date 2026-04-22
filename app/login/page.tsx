@@ -70,16 +70,14 @@ const LoginForm = () => {
     setLoading(true);
     setErrors({});
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Use auth context to login with credentials
-    const success = login(formData.email, formData.password);
+    // Use auth context to login with Firebase
+    const success = await login(formData.email, formData.password);
     
     if (!success) {
       setErrors({ general: 'Invalid email or password. Please try again.' });
       setLoading(false);
     }
+    // If successful, the AuthContext will handle the redirect
   };
 
   return (

@@ -64,19 +64,14 @@ const SignupPage = () => {
     setLoading(true);
     setErrors({});
     
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    // Use auth context to register
-    const success = register(formData.name, formData.email, formData.password);
+    // Use auth context to register with Firebase
+    const success = await register(formData.name, formData.email, formData.password);
     
     if (!success) {
-      setErrors({ general: 'Email already exists. Please login instead.' });
+      setErrors({ general: 'Registration failed. This email may already be registered.' });
       setLoading(false);
-    } else {
-      // Registration successful, redirect to login
-      router.push('/login?registered=true');
     }
+    // If successful, the AuthContext will handle the redirect
   };
 
   return (

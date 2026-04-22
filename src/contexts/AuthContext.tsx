@@ -2,90 +2,77 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { User as FirebaseUser } from 'firebase/auth';
+import { signIn, signUp, logOut, onAuthChange, getUserData } from '@/src/services/authService';
+import { AppUser } from '@/src/types/database';
 
 interface AuthContextType {
   isAuthenticated: boolean;
-  user: { name: string; email: string } | null;
-  login: (email: string, password: string) => boolean;
-  register: (name: string, email: string, password: string) => boolean;
-  logout: () => void;
+  user: AppUser | null;
+  firebaseUser: FirebaseUser | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  register: (name: string, email: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
+  const [user, setUser] = useState<AppUser | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is logged in on mount
-    const storedUser = localStorage.getItem('billingAppUser');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
-    }
+    // Listen to Firebase auth state changes
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      if (firebaseUser) {
+        setFirebaseUser(firebaseUser);
+        // Get user data from Firestore
+        const userData = await getUserData(firebaseUser.uid);
+        if (userData) {
+          setUser(userData);
+          setIsAuthenticated(true);
+        }
+      } else {
+        setUser(null);
+        setFirebaseUser(null);
+        setIsAuthenticated(false);
+      }
+      setLoading(false);
+    });
+
+    // Cleanup subscription
+    return () => unsubscribe();
   }, []);
 
-  const login = (email: string, password: string) => {
-    // Get stored users from localStorage
-    const storedUsers = localStorage.getItem('billingAppUsers');
-    const users = storedUsers ? JSON.parse(storedUsers) : [];
-    
-    // Find user with matching email and password
-    const user = users.find((u: any) => u.email === email && u.password === password);
-    
-    if (user) {
-      const userData = {
-        name: user.name,
-        email: user.email
-      };
-      localStorage.setItem('billingAppUser', JSON.stringify(userData));
-      setUser(userData);
-      setIsAuthenticated(true);
+  const login = async (email: string, password: string) => {
+    const result = await signIn(email, password);
+    if (result.success) {
       router.push('/dashboard');
       return true;
-    } else {
-      return false;
     }
+    return false;
   };
 
-  const register = (name: string, email: string, password: string) => {
-    // Get stored users from localStorage
-    const storedUsers = localStorage.getItem('billingAppUsers');
-    const users = storedUsers ? JSON.parse(storedUsers) : [];
-    
-    // Check if email already exists
-    const existingUser = users.find((u: any) => u.email === email);
-    
-    if (existingUser) {
-      return false; // Email already exists
+  const register = async (name: string, email: string, password: string) => {
+    const result = await signUp(email, password, name);
+    if (result.success) {
+      router.push('/login?registered=true');
+      return true;
     }
-    
-    // Add new user
-    const newUser = {
-      id: Date.now().toString(),
-      name: name,
-      email: email,
-      password: password, // In production, this should be hashed
-      createdAt: new Date().toISOString()
-    };
-    
-    users.push(newUser);
-    localStorage.setItem('billingAppUsers', JSON.stringify(users));
-    
-    return true;
+    return false;
   };
 
-  const logout = () => {
-    localStorage.removeItem('billingAppUser');
-    setUser(null);
-    setIsAuthenticated(false);
+  const logout = async () => {
+    await logOut();
     router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, register, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, firebaseUser, login, register, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
