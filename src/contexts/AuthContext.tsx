@@ -30,6 +30,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const unsubscribe = onAuthChange(async (firebaseUser) => {
       if (firebaseUser) {
         setFirebaseUser(firebaseUser);
+        
+        try {
+          // Retrieve current ID token and set __session cookie for Middleware protection
+          const token = await firebaseUser.getIdToken();
+          document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Lax; Secure`;
+        } catch (error) {
+          console.error("Error setting session cookie:", error);
+        }
+
         // Get user data from Firestore
         const userData = await getUserData(firebaseUser.uid);
         if (userData) {
@@ -40,6 +49,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null);
         setFirebaseUser(null);
         setIsAuthenticated(false);
+        // Clear __session cookie on sign-out
+        document.cookie = '__session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
       }
       setLoading(false);
     });
@@ -50,7 +61,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const result = await signIn(email, password);
-    if (result.success) {
+    if (result.success && result.user) {
+      try {
+        const token = await result.user.getIdToken();
+        document.cookie = `__session=${token}; path=/; max-age=3600; SameSite=Lax; Secure`;
+      } catch (error) {
+        console.error("Error setting token during login:", error);
+      }
       router.push('/dashboard');
       return true;
     }
