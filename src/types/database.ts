@@ -38,6 +38,10 @@ export interface Product {
   stock: number;
   status: 'active' | 'inactive' | 'discontinued';
   taxRate: number;
+  batchNumber?: string;
+  expiryDate?: string;
+  manufacturer?: string;
+  composition?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -50,6 +54,10 @@ export interface InvoiceItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  batchNumber?: string;
+  expiryDate?: string;
+  taxRate?: number;
+  discountPercentage?: number;
 }
 
 export interface Invoice {
@@ -69,6 +77,9 @@ export interface Invoice {
   dueDate: Date;
   status: 'draft' | 'sent' | 'paid' | 'overdue' | 'cancelled';
   notes?: string;
+  patientAge?: number;
+  patientGender?: 'male' | 'female' | 'other';
+  doctorName?: string;
   createdAt: Date;
   updatedAt: Date;
 }
