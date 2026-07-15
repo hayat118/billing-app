@@ -4,18 +4,14 @@ import React from 'react';
 import Card from '@/src/components/Card';
 import { 
   CurrencyDollarIcon, 
-  UserGroupIcon, 
-  DocumentTextIcon, 
-  ArrowTrendingUpIcon 
+  DocumentTextIcon 
 } from '@heroicons/react/24/solid';
 
 const DashboardPage = () => {
   // Mock data for dashboard
   const stats = [
     { name: 'Total Revenue', value: '$45,231.89', change: '+20.1%', changeType: 'positive', icon: CurrencyDollarIcon },
-    { name: 'Subscriptions', value: '+2350', change: '+180.1%', changeType: 'positive', icon: UserGroupIcon },
     { name: 'Sales', value: '$12,263.42', change: '+19%', changeType: 'positive', icon: DocumentTextIcon },
-    { name: 'Active Now', value: '573', change: '-12%', changeType: 'negative', icon: ArrowTrendingUpIcon },
   ];
 
   const recentInvoices = [
@@ -55,7 +51,7 @@ const DashboardPage = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 mb-8">
         {stats.map((stat, index) => (
           <StatCard key={index} stat={stat} />
         ))}
