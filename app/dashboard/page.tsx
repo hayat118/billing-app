@@ -1,10 +1,12 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import Card from '@/src/components/Card';
 import { 
   CurrencyDollarIcon, 
-  DocumentTextIcon 
+  DocumentTextIcon,
+  BeakerIcon
 } from '@heroicons/react/24/solid';
 
 const DashboardPage = () => {
@@ -51,10 +53,32 @@ const DashboardPage = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 mb-8">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-8">
         {stats.map((stat, index) => (
           <StatCard key={index} stat={stat} />
         ))}
+        {/* Medicine Stock Card */}
+        <Card className="flex flex-col justify-between p-6">
+          <div className="flex items-center">
+            <div className="p-3 rounded-lg bg-blue-100 text-blue-600 flex-shrink-0">
+              <BeakerIcon className="h-6 w-6" />
+            </div>
+            <div className="ml-4">
+              <p className="text-sm font-medium text-gray-600">Medicine & Equipment Stock</p>
+              <div className="flex items-baseline mt-1">
+                <p className="text-2xl font-semibold text-gray-900">4,820</p>
+                <span className="ml-2 text-sm text-gray-500 font-medium">Items</span>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4">
+            <Link href="/dashboard/medicine-stock" className="block w-full">
+              <span className="w-full inline-flex items-center justify-center rounded-md font-medium transition-colors border border-gray-300 bg-transparent hover:bg-gray-100 text-gray-800 h-9 px-3 text-sm cursor-pointer">
+                View Medicine Stock &rarr;
+              </span>
+            </Link>
+          </div>
+        </Card>
       </div>
 
       {/* Recent Activity */}

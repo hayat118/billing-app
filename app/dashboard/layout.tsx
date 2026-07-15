@@ -10,7 +10,8 @@ import {
   UserGroupIcon,
   ShoppingBagIcon,
   CreditCardIcon,
-  CogIcon
+  CogIcon,
+  BeakerIcon
 } from '@heroicons/react/24/solid';
 import Navigation from '@/src/components/Navigation';
 
@@ -25,6 +26,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
     { name: 'Invoices', href: '/dashboard/invoices', icon: <DocumentTextIcon className="h-5 w-5" /> },
     { name: 'Customers', href: '/dashboard/customers', icon: <UserGroupIcon className="h-5 w-5" /> },
     { name: 'Products', href: '/dashboard/products', icon: <ShoppingBagIcon className="h-5 w-5" /> },
+    { name: 'Medicine Stock', href: '/dashboard/medicine-stock', icon: <BeakerIcon className="h-5 w-5" /> },
     { name: 'Payments', href: '/dashboard/payments', icon: <CreditCardIcon className="h-5 w-5" /> },
     { name: 'Settings', href: '/dashboard/settings', icon: <CogIcon className="h-5 w-5" /> },
   ];
