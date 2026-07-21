@@ -1,83 +1,88 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Card from '@/src/components/Card';
-import Table from '@/src/components/Table';
-import { 
+import React, { useEffect, useState } from "react";
+import Card from "@/src/components/Card";
+import Table from "@/src/components/Table";
+import {
+  defaultStockItems,
+  loadStockItems,
+  saveStockItems,
+  type StockItem,
+} from "@/src/utils/stockStorage";
+import {
   MagnifyingGlassIcon,
   BeakerIcon,
   WrenchScrewdriverIcon,
   ExclamationTriangleIcon,
-  CheckCircleIcon
-} from '@heroicons/react/24/solid';
-
-interface StockItem {
-  id: string;
-  name: string;
-  sku: string;
-  category: 'Medicine' | 'Equipment';
-  stock: number;
-  location: string;
-  unit: string;
-  price: number;
-}
+  CheckCircleIcon,
+} from "@heroicons/react/24/solid";
 
 const MedicineStockPage = () => {
-  const [stockItems] = useState<StockItem[]>([
-    { id: '1', name: 'Paracetamol 500mg', sku: 'MED-001', category: 'Medicine', stock: 250, location: 'Shelf A1', unit: 'Tablets', price: 0.15 },
-    { id: '2', name: 'Ibuprofen 400mg', sku: 'MED-002', category: 'Medicine', stock: 180, location: 'Shelf A2', unit: 'Tablets', price: 0.25 },
-    { id: '3', name: 'Amoxicillin 250mg Suspension', sku: 'MED-003', category: 'Medicine', stock: 95, location: 'Fridge B', unit: 'Bottles', price: 5.50 },
-    { id: '4', name: 'Surgical Masks (Box of 50)', sku: 'EQP-001', category: 'Equipment', stock: 45, location: 'Cabinet C1', unit: 'Boxes', price: 12.00 },
-    { id: '5', name: 'Sterile Gloves (Pairs)', sku: 'EQP-002', category: 'Equipment', stock: 350, location: 'Cabinet C2', unit: 'Pairs', price: 1.50 },
-    { id: '6', name: 'Syringes 5ml with needle', sku: 'EQP-003', category: 'Equipment', stock: 500, location: 'Cabinet C3', unit: 'Units', price: 0.40 },
-    { id: '7', name: 'Cetirizine 10mg', sku: 'MED-004', category: 'Medicine', stock: 320, location: 'Shelf A3', unit: 'Tablets', price: 0.20 },
-    { id: '8', name: 'Aspirin 75mg', sku: 'MED-005', category: 'Medicine', stock: 150, location: 'Shelf A4', unit: 'Tablets', price: 0.10 },
-    { id: '9', name: 'Digital Thermometer', sku: 'EQP-004', category: 'Equipment', stock: 24, location: 'Cabinet D1', unit: 'Units', price: 15.00 },
-    { id: '10', name: 'Blood Pressure Monitor', sku: 'EQP-005', category: 'Equipment', stock: 12, location: 'Cabinet D2', unit: 'Units', price: 45.00 },
-    { id: '11', name: 'Atorvastatin 20mg', sku: 'MED-006', category: 'Medicine', stock: 8, location: 'Shelf B1', unit: 'Tablets', price: 1.10 },
-    { id: '12', name: 'Metformin 500mg', sku: 'MED-007', category: 'Medicine', stock: 5, location: 'Shelf B2', unit: 'Tablets', price: 0.18 },
-    { id: '13', name: 'Stethoscope Premium', sku: 'EQP-006', category: 'Equipment', stock: 3, location: 'Cabinet D3', unit: 'Units', price: 85.00 },
-  ]);
+  const [stockItems, setStockItems] = useState<StockItem[]>(defaultStockItems);
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<'All' | 'Medicine' | 'Equipment'>('All');
-  const [stockFilter, setStockFilter] = useState<'All' | 'Low' | 'Normal'>('All');
+  useEffect(() => {
+    const items = loadStockItems();
+    setStockItems(items);
+  }, []);
+
+  useEffect(() => {
+    saveStockItems(stockItems);
+  }, [stockItems]);
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<
+    "All" | "Medicine" | "Equipment"
+  >("All");
+  const [stockFilter, setStockFilter] = useState<"All" | "Low" | "Normal">(
+    "All",
+  );
 
   // Logic to determine low stock threshold (e.g. less than 15 units)
   const LOW_STOCK_THRESHOLD = 15;
 
-  const filteredItems = stockItems.filter(item => {
-    const matchesSearch = 
+  const filteredItems = stockItems.filter((item) => {
+    const matchesSearch =
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.location.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
+    const matchesCategory =
+      categoryFilter === "All" || item.category === categoryFilter;
 
     let matchesStock = true;
-    if (stockFilter === 'Low') {
+    if (stockFilter === "Low") {
       matchesStock = item.stock < LOW_STOCK_THRESHOLD;
-    } else if (stockFilter === 'Normal') {
+    } else if (stockFilter === "Normal") {
       matchesStock = item.stock >= LOW_STOCK_THRESHOLD;
     }
 
     return matchesSearch && matchesCategory && matchesStock;
   });
 
-  const totalMedicines = stockItems.filter(i => i.category === 'Medicine').length;
-  const totalEquipment = stockItems.filter(i => i.category === 'Equipment').length;
-  const lowStockCount = stockItems.filter(i => i.stock < LOW_STOCK_THRESHOLD).length;
+  const totalMedicines = stockItems.filter(
+    (i) => i.category === "Medicine",
+  ).length;
+  const totalEquipment = stockItems.filter(
+    (i) => i.category === "Equipment",
+  ).length;
+  const lowStockCount = stockItems.filter(
+    (i) => i.stock < LOW_STOCK_THRESHOLD,
+  ).length;
 
   const columns = [
     {
-      key: 'name',
-      title: 'Item Detail',
+      key: "name",
+      title: "Item Detail",
       render: (name: string, record: StockItem) => (
         <div className="flex items-center space-x-3">
-          <div className={`p-2 rounded-lg ${
-            record.category === 'Medicine' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600'
-          }`}>
-            {record.category === 'Medicine' ? (
+          <div
+            className={`p-2 rounded-lg ${
+              record.category === "Medicine"
+                ? "bg-indigo-50 text-indigo-600"
+                : "bg-amber-50 text-amber-600"
+            }`}
+          >
+            {record.category === "Medicine" ? (
               <BeakerIcon className="h-5 w-5" />
             ) : (
               <WrenchScrewdriverIcon className="h-5 w-5" />
@@ -88,43 +93,53 @@ const MedicineStockPage = () => {
             <div className="text-xs text-gray-500 font-mono">{record.sku}</div>
           </div>
         </div>
-      )
+      ),
     },
     {
-      key: 'category',
-      title: 'Category',
+      key: "category",
+      title: "Category",
       render: (category: string) => (
-        <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
-          category === 'Medicine' ? 'bg-indigo-100 text-indigo-800' : 'bg-amber-100 text-amber-800'
-        }`}>
+        <span
+          className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
+            category === "Medicine"
+              ? "bg-indigo-100 text-indigo-800"
+              : "bg-amber-100 text-amber-800"
+          }`}
+        >
           {category}
         </span>
-      )
+      ),
     },
     {
-      key: 'location',
-      title: 'Location',
+      key: "location",
+      title: "Location",
       render: (location: string) => (
         <div className="text-sm font-medium text-gray-600">{location}</div>
-      )
+      ),
     },
     {
-      key: 'price',
-      title: 'Unit Price',
+      key: "price",
+      title: "Unit Price",
       render: (price: number) => (
-        <div className="text-sm font-medium text-gray-900">${price.toFixed(2)}</div>
-      )
+        <div className="text-sm font-medium text-gray-900">
+          ${price.toFixed(2)}
+        </div>
+      ),
     },
     {
-      key: 'stock',
-      title: 'Available Stock',
+      key: "stock",
+      title: "Available Stock",
       render: (stock: number, record: StockItem) => {
         const isLow = stock < LOW_STOCK_THRESHOLD;
         return (
           <div className="flex items-center space-x-2">
-            <span className={`text-lg font-bold ${
-              isLow ? 'text-rose-600 font-extrabold' : 'text-emerald-700 font-bold'
-            }`}>
+            <span
+              className={`text-lg font-bold ${
+                isLow
+                  ? "text-rose-600 font-extrabold"
+                  : "text-emerald-700 font-bold"
+              }`}
+            >
               {stock}
             </span>
             <span className="text-xs text-gray-400 font-medium">
@@ -143,8 +158,8 @@ const MedicineStockPage = () => {
             )}
           </div>
         );
-      }
-    }
+      },
+    },
   ];
 
   return (
@@ -152,9 +167,12 @@ const MedicineStockPage = () => {
       {/* Page Header */}
       <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Medicine & Equipment Stock</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Medicine & Equipment Stock
+          </h1>
           <p className="mt-1 text-sm text-gray-500">
-            Real-time tracking, stock search, and replenishment status for clinic inventory.
+            Real-time tracking, stock search, and replenishment status for
+            clinic inventory.
           </p>
         </div>
       </div>
@@ -186,7 +204,9 @@ const MedicineStockPage = () => {
             <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
           </div>
           <div className="ml-4">
-            <p className="text-sm font-medium text-gray-500">Low Stock Alerts</p>
+            <p className="text-sm font-medium text-gray-500">
+              Low Stock Alerts
+            </p>
             <p className="text-2xl font-bold text-red-600">{lowStockCount}</p>
           </div>
         </Card>
@@ -229,7 +249,9 @@ const MedicineStockPage = () => {
               onChange={(e) => setStockFilter(e.target.value as any)}
             >
               <option value="All">All Stock Levels</option>
-              <option value="Low">Low Stock (&lt; {LOW_STOCK_THRESHOLD})</option>
+              <option value="Low">
+                Low Stock (&lt; {LOW_STOCK_THRESHOLD})
+              </option>
               <option value="Normal">Normal Stock</option>
             </select>
           </div>
@@ -237,12 +259,11 @@ const MedicineStockPage = () => {
       </Card>
 
       {/* Main Stock Table */}
-      <Card title={`Inventory Items (${filteredItems.length})`} className="shadow-sm border border-gray-200 bg-white">
-        <Table
-          columns={columns}
-          data={filteredItems}
-          rowKey="id"
-        />
+      <Card
+        title={`Inventory Items (${filteredItems.length})`}
+        className="shadow-sm border border-gray-200 bg-white"
+      >
+        <Table columns={columns} data={filteredItems} rowKey="id" />
       </Card>
     </div>
   );
