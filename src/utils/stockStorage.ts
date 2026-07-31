@@ -181,17 +181,23 @@ const getNameTokens = (value: string) =>
     .filter(Boolean);
 
 export const reduceStockForInvoiceItems = (
-  invoiceItems: Array<{ name?: string; quantity?: number }>,
+  invoiceItems: Array<{
+    name?: string;
+    description?: string;
+    quantity?: number;
+  }>,
   currentItems: StockItem[] = loadStockItems(),
 ) => {
   const nextItems = currentItems.map((item) => ({ ...item }));
 
-  invoiceItems.forEach(({ name, quantity }) => {
-    if (!name || !quantity || quantity <= 0) {
+  invoiceItems.forEach(({ name, description, quantity }) => {
+    const itemName = (name ?? description ?? "").trim();
+
+    if (!itemName || !quantity || quantity <= 0) {
       return;
     }
 
-    const itemNameTokens = getNameTokens(name);
+    const itemNameTokens = getNameTokens(itemName);
     const matchedItem = nextItems.find((stockItem) => {
       if (stockItem.category !== "Medicine") {
         return false;

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Card from "@/src/components/Card";
 import Button from "@/src/components/Button";
 import Input from "@/src/components/Input";
@@ -23,6 +23,95 @@ import {
   reduceStockForInvoiceItems,
   saveStockItems,
 } from "@/src/utils/stockStorage";
+
+const INVOICE_STORAGE_KEY = "billing-app-invoices";
+
+const formatDisplayDate = (value?: string) => {
+  if (!value) {
+    return "—";
+  }
+
+  const text = String(value).trim();
+  if (!text) {
+    return "—";
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return text;
+  }
+
+  try {
+    const parsedDate = new Date(text);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return text;
+    }
+
+    return parsedDate.toISOString().split("T")[0];
+  } catch {
+    return text;
+  }
+};
+
+const defaultInvoices = [
+  {
+    id: "1",
+    invoiceNumber: "INV-001",
+    customerName: "John Smith",
+    customerEmail: "john@example.com",
+    patientAge: 45,
+    patientGender: "male",
+    doctorName: "Dr. Robert Carter",
+    subtotal: 300.0,
+    taxAmount: 36.0,
+    discount: 30.0,
+    total: 306.0,
+    amount: 306.0,
+    date: "2023-04-12",
+    dueDate: "2023-05-12",
+    status: "paid",
+    items: [
+      {
+        id: "i1",
+        description: "Amoxicillin 500mg",
+        quantity: 2,
+        unitPrice: 150.0,
+        total: 300.0,
+        batchNumber: "AM2402",
+        expiryDate: "2026-08-31",
+        taxRate: 12,
+      },
+    ],
+  },
+  {
+    id: "2",
+    invoiceNumber: "INV-002",
+    customerName: "Sarah Johnson",
+    customerEmail: "sarah@example.com",
+    patientAge: 29,
+    patientGender: "female",
+    doctorName: "Dr. Amanda Brooks",
+    subtotal: 120.0,
+    taxAmount: 21.6,
+    discount: 0.0,
+    total: 141.6,
+    amount: 141.6,
+    date: "2023-04-11",
+    dueDate: "2023-05-11",
+    status: "sent",
+    items: [
+      {
+        id: "i2",
+        description: "Atorvastatin 10mg",
+        quantity: 1,
+        unitPrice: 120.0,
+        total: 120.0,
+        batchNumber: "AT2311",
+        expiryDate: "2027-05-31",
+        taxRate: 18,
+      },
+    ],
+  },
+];
 
 const mockMedicines = [
   {
@@ -91,73 +180,49 @@ interface InvoiceFormData {
 }
 
 const InvoicesPage = () => {
-  const [invoices, setInvoices] = useState<any[]>([
-    {
-      id: "1",
-      invoiceNumber: "INV-001",
-      customerName: "John Smith",
-      customerEmail: "john@example.com",
-      patientAge: 45,
-      patientGender: "male",
-      doctorName: "Dr. Robert Carter",
-      subtotal: 300.0,
-      taxAmount: 36.0,
-      discount: 30.0,
-      total: 306.0,
-      amount: 306.0,
-      date: "2023-04-12",
-      dueDate: "2023-05-12",
-      status: "paid",
-      items: [
-        {
-          id: "i1",
-          description: "Amoxicillin 500mg",
-          quantity: 2,
-          unitPrice: 150.0,
-          total: 300.0,
-          batchNumber: "AM2402",
-          expiryDate: "2026-08-31",
-          taxRate: 12,
-        },
-      ],
-    },
-    {
-      id: "2",
-      invoiceNumber: "INV-002",
-      customerName: "Sarah Johnson",
-      customerEmail: "sarah@example.com",
-      patientAge: 29,
-      patientGender: "female",
-      doctorName: "Dr. Amanda Brooks",
-      subtotal: 120.0,
-      taxAmount: 21.6,
-      discount: 0.0,
-      total: 141.6,
-      amount: 141.6,
-      date: "2023-04-11",
-      dueDate: "2023-05-11",
-      status: "sent",
-      items: [
-        {
-          id: "i2",
-          description: "Atorvastatin 10mg",
-          quantity: 1,
-          unitPrice: 120.0,
-          total: 120.0,
-          batchNumber: "AT2311",
-          expiryDate: "2027-05-31",
-          taxRate: 18,
-        },
-      ],
-    },
-  ]);
+  const [invoices, setInvoices] = useState<any[]>(defaultInvoices);
+  const [hasLoadedInvoices, setHasLoadedInvoices] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    try {
+      const storedInvoices = window.localStorage.getItem(INVOICE_STORAGE_KEY);
+      if (storedInvoices) {
+        const parsedInvoices = JSON.parse(storedInvoices) as any[];
+        if (Array.isArray(parsedInvoices) && parsedInvoices.length > 0) {
+          setInvoices(parsedInvoices);
+          setHasLoadedInvoices(true);
+          return;
+        }
+      }
+    } catch {
+      // Fall back to the default invoices when storage is unavailable or invalid.
+    }
+
+    window.localStorage.setItem(
+      INVOICE_STORAGE_KEY,
+      JSON.stringify(defaultInvoices),
+    );
+    setHasLoadedInvoices(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !hasLoadedInvoices) {
+      return;
+    }
+
+    window.localStorage.setItem(INVOICE_STORAGE_KEY, JSON.stringify(invoices));
+  }, [invoices, hasLoadedInvoices]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const emptyRow = (): MedicineItemInput => ({
-    id: Date.now().toString() + Math.random().toString(),
+    id: `row-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
     medicineId: "",
     name: "",
     batchNumber: "",
@@ -354,15 +419,16 @@ const InvoicesPage = () => {
     }
 
     const today = new Date().toISOString().split("T")[0];
-    const nextInvoiceNumber = `INV-${String(invoices.length + 1).padStart(3, "0")}`;
+    const nextInvoiceNumber = `INV-${String((invoices?.length ?? 0) + 1).padStart(3, "0")}`;
     const { subtotal, totalDiscount, totalTax, grandTotal } = calculateTotals(
       formData.items,
     );
 
     const invoiceItems: InvoiceItem[] = formData.items.map((item, idx) => ({
-      id: `i-${Date.now()}-${idx}`,
+      id: `i-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 8)}`,
       productId: item.medicineId,
       description: item.name,
+      name: item.name,
       quantity: Number(item.quantity),
       unitPrice: Number(item.unitPrice),
       total:
@@ -377,7 +443,7 @@ const InvoicesPage = () => {
     }));
 
     const newInvoice: any = {
-      id: Date.now().toString(),
+      id: `inv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       invoiceNumber: nextInvoiceNumber,
       customerName: formData.customerName,
       customerEmail: formData.customerEmail || "no-email@example.com",
@@ -402,7 +468,7 @@ const InvoicesPage = () => {
     );
     saveStockItems(updatedStockItems);
 
-    setInvoices([newInvoice, ...invoices]);
+    setInvoices((prevInvoices) => [newInvoice, ...prevInvoices]);
     setIsModalOpen(false);
   };
 
@@ -449,9 +515,7 @@ const InvoicesPage = () => {
     {
       key: "date",
       title: "Billing Date",
-      render: (value: string) => (
-        <div>{new Date(value).toLocaleDateString()}</div>
-      ),
+      render: (value: string) => <div>{formatDisplayDate(value)}</div>,
     },
     {
       key: "status",
